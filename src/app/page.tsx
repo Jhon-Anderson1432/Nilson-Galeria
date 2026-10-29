@@ -1,69 +1,60 @@
-import Image from "next/image";
+"use client";
+import Navbar from '@/components/Navbar';
+import { useIdioma } from '@/context/LanguageContext';
+import Link from 'next/link';
 
 export default function Home() {
+  const { idioma } = useIdioma();
+  const isEnglish = idioma === 'en';
+
+  const btnClasses = "min-w-[200px] px-6 py-4 border border-[#D4AF37]/80 bg-black/30 text-[#D4AF37] backdrop-blur-xl flex items-center justify-center uppercase tracking-widest font-medium shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all duration-500 rounded-sm hover:bg-[#D4AF37] hover:text-black hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] hover:border-[#D4AF37] group";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="relative min-h-screen w-full overflow-x-hidden font-sans flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-zinc-900 selection:bg-[#D4AF37] selection:text-black">
+      
+      <Navbar ocultarBuscador={true} ocultarBotonVolver={true} fondoTranslucido={true} />
+
+      {/* Contenido principal centrado */}
+      <section className="relative z-20 flex-1 flex flex-col items-center justify-center min-h-screen px-4 pt-28 pb-20">
+        
+        <img 
+          src="/logo.png" 
+          alt="Logo Galería" 
+          className="w-48 md:w-64 mb-8 object-contain drop-shadow-[0_0_20px_rgba(212,175,55,0.4)] animate-fade-in-down"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        
+        <h2 className="text-lg md:text-xl font-light tracking-[0.25em] mb-14 text-[#D4AF37] drop-shadow-lg text-center uppercase animate-fade-in">
+          {isEnglish 
+            ? 'Art is not bought. It is recognized, and when you recognize it, it recognizes you.' 
+            : 'El arte no se compra. Se reconoce y cuando lo reconoces, te reconoce a ti.' 
+          }
+        </h2>
+
+        <div className="flex flex-col md:flex-row flex-wrap gap-5 md:gap-6 w-full max-w-5xl justify-center animate-slide-up">
+          
+          {/* Ruta dinámica 1: Contemporáneo */}
+          <Link href="/exposiciones/contemporaneo" className={btnClasses}>
+            <span className="text-sm transition-transform duration-300 group-hover:scale-105">
+              {isEnglish ? 'Gallery collection' : 'Arte contemporáneo'}
+            </span>
+          </Link>
+          
+          {/* Ruta dinámica 2: Privada */}
+          <Link href="/exposiciones/privada" className={btnClasses}>
+            <span className="text-sm transition-transform duration-300 group-hover:scale-105">
+              {isEnglish ? 'Private collection / Diverse artists' : 'Colección privada / Artistas diversos'}
+            </span>
+          </Link>
+          
+          {/* Ruta estática: Trayectoria */}
+          <Link href="/trayectoria" className={btnClasses}>
+            <span className="text-sm transition-transform duration-300 group-hover:scale-105">
+              {isEnglish ? 'Trajectory' : 'Trayectoria'}
+            </span>
+          </Link>
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
