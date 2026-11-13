@@ -1,13 +1,13 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // <-- Importación necesaria para redirigir
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 import { Menu, X, Plus, Search, Image as ImageIcon, BarChart3, LayoutDashboard, LogOut } from 'lucide-react';
 
 export default function AdminPanel() {
-  const router = useRouter(); // <-- Instanciamos el router
+  const router = useRouter();
 
   // Estados de navegación
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -21,6 +21,10 @@ export default function AdminPanel() {
   // Estados de los Modales (Formularios)
   const [showModalSerie, setShowModalSerie] = useState(false);
   const [showModalObra, setShowModalObra] = useState(false);
+
+  // Estados de IMÁGENES (NUEVO)
+  const [imagenesPreview, setImagenesPreview] = useState<Record<number, string>>({});
+  const [imagenesFiles, setImagenesFiles] = useState<Record<number, File | null>>({});
 
   // Estados del Formulario de OBRA
   const [tipoAutor, setTipoAutor] = useState<'artista' | 'otro'>('artista');
@@ -43,23 +47,19 @@ export default function AdminPanel() {
   // ==========================================
   useEffect(() => {
     const verificarYcargarDatos = async () => {
-      // 1. Verificar si hay sesión activa
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Si NO hay sesión, lo devolvemos al login (asegúrate de que esta sea la ruta correcta a tu login)
       if (!session) {
         router.push('/login');
         return;
       }
 
-      // 2. Traer Obras si hay sesión
       const { data: dataObras } = await supabase
         .from('obras')
         .select('*')
         .order('created_at', { ascending: false });
       if (dataObras) setObras(dataObras);
 
-      // 3. Traer Series si hay sesión
       const { data: dataSeries } = await supabase
         .from('series')
         .select('*');
@@ -70,10 +70,20 @@ export default function AdminPanel() {
   }, [router]);
 
   // ==========================================
-  // CONEXIÓN SUPABASE: Funciones CRUD
+  // FUNCIONES DE INTERFAZ E IMÁGENES
   // ==========================================
-  
-  // Función para cerrar sesión
+
+  // Función para manejar la selección de fotos de la PC (NUEVO)
+  const handleImageSelect = (num: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Guardamos el archivo real para subirlo a Supabase más adelante
+      setImagenesFiles(prev => ({ ...prev, [num]: file }));
+      // Creamos una URL temporal para mostrar la foto en el recuadro
+      setImagenesPreview(prev => ({ ...prev, [num]: URL.createObjectURL(file) }));
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
@@ -105,6 +115,8 @@ export default function AdminPanel() {
       descripcion: formObra.descripcion
     };
 
+    // (Aquí luego agregaremos el código para subir las imagenesFiles a Supabase Storage)
+
     if (formObra.id) {
       const { data } = await supabase.from('obras').update(obraParaGuardar).eq('id', formObra.id).select();
       if (data) setObras(obras.map(o => o.id === formObra.id ? data[0] : o));
@@ -130,6 +142,9 @@ export default function AdminPanel() {
       tecnica: obra.tecnica || '',
       descripcion: obra.descripcion || ''
     });
+    // Limpiamos las fotos al abrir el modal para editar (después cargaremos las de la BD)
+    setImagenesPreview({});
+    setImagenesFiles({});
     setShowModalObra(true);
   };
 
@@ -242,6 +257,9 @@ export default function AdminPanel() {
               <button onClick={() => {
                   setTipoAutor('artista');
                   setFormObra({ id: null, titulo: '', autorNombre: '', serieSeleccionada: '', tipoObra: 'Pintura', precio: '', medidas: '', tecnica: '', descripcion: '' });
+                  // Limpiamos visualmente las fotos al crear nueva
+                  setImagenesPreview({});
+                  setImagenesFiles({});
                   setShowModalObra(true);
                 }} 
                 className="bg-[#D4AF37] text-black px-4 py-2.5 md:px-6 rounded-full font-bold hover:bg-yellow-600 transition-all text-xs uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.3)]">
@@ -381,19 +399,37 @@ export default function AdminPanel() {
             
             <form onSubmit={handleGuardarObra} className="space-y-6">
               
-              {/* ZONA DE IMÁGENES */}
+              {/* ZONA DE IMÁGENES (CORREGIDA) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3].map((num) => (
-                  <div key={num} className="p-4 border-2 border-dashed border-white/10 rounded-xl text-center bg-white/5 hover:border-[#D4AF37]/50 hover:bg-white/10 transition-all flex flex-col items-center justify-center min-h-[100px] cursor-pointer group">
-                    <ImageIcon className="text-neutral-500 mb-2 group-hover:text-[#D4AF37] transition-colors" />
-                    <p className="text-[9px] uppercase tracking-widest text-neutral-400 group-hover:text-white transition-colors">
-                      {num === 1 ? 'Foto Principal (Obligatoria)' : `Foto Detalle ${num} (Opcional)`}
-                    </p>
-                  </div>
+                  <label key={num} className="p-4 border-2 border-dashed border-white/10 rounded-xl text-center bg-white/5 hover:border-[#D4AF37]/50 hover:bg-white/10 transition-all flex flex-col items-center justify-center min-h-[120px] cursor-pointer group relative overflow-hidden">
+                    
+                    {/* El input oculto que abre la ventana de archivos */}
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="hidden" 
+                      onChange={(e) => handleImageSelect(num, e)}
+                    />
+
+                    {imagenesPreview[num] ? (
+                      /* Si ya seleccionaste foto, se muestra aquí de fondo */
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={imagenesPreview[num]} alt={`Foto ${num}`} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                    ) : (
+                      /* Si no, mostramos el ícono gris normal */
+                      <>
+                        <ImageIcon className="text-neutral-500 mb-2 group-hover:text-[#D4AF37] transition-colors" />
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 group-hover:text-white transition-colors relative z-10">
+                          {num === 1 ? 'Foto Principal (Obligatoria)' : `Foto Detalle ${num} (Opcional)`}
+                        </p>
+                      </>
+                    )}
+                  </label>
                 ))}
               </div>
 
-              {/* ¿DE QUIÉN ES LA OBRA? (Lógica Core) */}
+              {/* ¿DE QUIÉN ES LA OBRA? */}
               <div className="bg-black/50 border border-white/10 p-5 rounded-xl space-y-4">
                 <span className="block text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold">1. Procedencia de la obra</span>
                 
